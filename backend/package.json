@@ -1,0 +1,25 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aryaekar/realtime-chat.git"
+  },
+  "author": "Arya Ekar",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/aryaekar/realtime-chat/issues"
+  },
+  "homepage": "https://github.com/aryaekar/realtime-chat#readme",
+  "description": "",
+  "dependencies": {
+    "express": "^5.1.0",
+    "http": "^0.0.1-security",
+    "socket.io": "^4.8.1"
+  }
+}

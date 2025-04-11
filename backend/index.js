@@ -22,8 +22,13 @@ app.get("/", (req, res) => {
 });
 io.on('connection',(socket)=>{
     console.log("user is connected",socket.id);
-    socket.on("send-message",(message)=>{
-        console.log(message);
+
+    socket.on("send-message",(message,friendId)=>{
+        socket.to(friendId).emit("recieve-message",message);
+    })
+
+    socket.on("join",(userid)=>{
+        socket.join(userid);
     })
 })
 

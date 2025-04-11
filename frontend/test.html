@@ -7,11 +7,21 @@
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
 <body>
+    <h2>User</h2>
+    <form id="userForm">
+        <p>Your Id:</p>
+        <input type="text" id="userid" required>
+    </form>
+    <form id="partForm">
+        <p>Friends Id:</p>
+        <input type="text" id="participant" required>
+    </form>
     <h2>Chat Box</h2>
     <form id="chatForm">
         <input type="text" id="messageInput" placeholder="Type your message..." required>
         <button type="submit">Send message</button>
     </form>
+    <div id="messagebox"></div>
     <script src="test.js"></script>
 </body>
 </html>

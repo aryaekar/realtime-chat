@@ -4,7 +4,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon index.js"
   },
   "repository": {
     "type": "git",
@@ -18,8 +19,10 @@
   "homepage": "https://github.com/aryaekar/realtime-chat#readme",
   "description": "",
   "dependencies": {
+    "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "http": "^0.0.1-security",
+    "mongoose": "^8.13.2",
     "socket.io": "^4.8.1"
   }
 }

@@ -1,16 +1,12 @@
 import { Server } from "socket.io";
 import express, { json } from "express";
 import { createServer } from "http";
-import path from "path";
-import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import { configDotenv } from "dotenv";
 import Chat from "./chatmodel";
 import Message from "./messagemodel";
 
 configDotenv();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const connectDB=async()=>{
     const res=await mongoose.connect(process.env.MONGO_API);
     if(res)
@@ -26,11 +22,6 @@ const io =new Server(httpserver,{
 // app.get("/",(req,res)=>{
 //     res.json({stat:"workinf fine"});
 // })
-app.use(express.static(path.join(__dirname, "../Frontend")))
-
-app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "../frontend", "test.html"));
-});
 
 app.get("/retrivechats/:chatid",async(req,res)=>{
     const chatid=req.params.chatid;

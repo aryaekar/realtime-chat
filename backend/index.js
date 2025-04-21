@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import { configDotenv } from "dotenv";
 import Chat from "./chatmodel";
 import Message from "./messagemodel";
-
+import User from "./usermodel";
 configDotenv();
 const connectDB=async()=>{
     const res=await mongoose.connect(process.env.MONGO_API);
@@ -23,6 +23,31 @@ const io =new Server(httpserver,{
 //     res.json({stat:"workinf fine"});
 // })
 
+app.get("/register",async(req,res)=>{
+    const {username,email,password}=req.body;
+    if(!username || !email || !password){
+        return res.status(400).json({error:"All fields are required"});
+    }
+    const user=await User.findOne({$or:[{username},{email}]});
+    if(user){
+        return res.status(400).json({error:"User already exists"});
+    }
+    const newuser=new User({username,email,password});
+    await newuser.save();
+    res.status(201).json({newuser});
+})
+
+app.post("/login",async(req,res)=>{
+    const {email,password}=req.body;
+    const user=await User.findOne({email});
+    if(!user){
+        return res.status(400).json({error:"User not found"});
+    }
+    if(user.password!==password){
+        return res.status(400).json({error:"Invalid password"});
+    }
+    res.status(200).json({user});
+})
 app.get("/retrivechats/:chatid",async(req,res)=>{
     const chatid=req.params.chatid;
     if(!mongoose.isValidObjectId(chatid)){

@@ -4,11 +4,13 @@ const usermodel=new mongoose.Schema({
     username: String,
     friends:[{
         type:SchemaTypes.ObjectId,
-        ref:'User'
+        ref:'User',
+        default:[]
     }],
     chats:[{
         type:SchemaTypes.ObjectId,
-        ref:'Chat'
+        ref:'Chat',
+        default:[]
     }],
     email: String,
     password: String

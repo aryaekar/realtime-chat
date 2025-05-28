@@ -1,32 +1,18 @@
-import { useState, createContext } from 'react'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
-import Home from './pages/home'
-import Login from './pages/login'
-import Register from './pages/register'
-
-export const AuthContext = createContext(null);
-
+import Home from './pages/home.jsx'
+import Login from './pages/login.jsx'
+import Register from './pages/register.jsx'
+import { useAuthContext} from './context/authcontext.jsx'
 function App() {
-  const [user, setUser] = useState(null);
-  
-  const login = (userData) => {
-    setUser(userData);
-  };
-
-  const logout = () => {
-    setUser(null);
-  };
-
+  const {user}=useAuthContext();
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
       <Router>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={user ? <Home /> : <Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
         </Routes>
       </Router>
-    </AuthContext.Provider>
   )
 }
 

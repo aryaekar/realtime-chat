@@ -1,29 +1,23 @@
-import { Server } from "socket.io";
-import express, { json } from "express";
-import { createServer } from "http";
+import express from "express";
+import { app, io, server, getReceiverSocketId } from "./socket.js";
 import mongoose from "mongoose";
 import { configDotenv } from "dotenv";
-import Chat from "./chatmodel";
-import Message from "./messagemodel";
-import User from "./usermodel";
+import Chat from "./chatmodel.js";
+import Message from "./messagemodel.js";
+import User from "./usermodel.js";
+import cors from "cors";
+import Request from "./requestmodel.js";
 configDotenv();
+app.use(express.json());
+app.use(cors({ origin: "http://localhost:5173", methods: ["GET", "POST"] }));
+
 const connectDB=async()=>{
     const res=await mongoose.connect(process.env.MONGO_API);
     if(res)
-        console.log("Successfully connected to DataBase");
+    console.log("Successfully connected to DataBase");
 }
-connectDB();
-const app = express();
-const httpserver = createServer(app);
-const io =new Server(httpserver,{
-    cors: { origin: "*" } // Allow all clients to connect
-});
 
-// app.get("/",(req,res)=>{
-//     res.json({stat:"workinf fine"});
-// })
-
-app.get("/register",async(req,res)=>{
+app.post("/register",async(req,res)=>{
     const {username,email,password}=req.body;
     if(!username || !email || !password){
         return res.status(400).json({error:"All fields are required"});
@@ -34,7 +28,7 @@ app.get("/register",async(req,res)=>{
     }
     const newuser=new User({username,email,password});
     await newuser.save();
-    res.status(201).json({newuser});
+    res.status(201).json({user:newuser});
 })
 
 app.post("/login",async(req,res)=>{
@@ -48,7 +42,8 @@ app.post("/login",async(req,res)=>{
     }
     res.status(200).json({user});
 })
-app.get("/retrivechats/:chatid",async(req,res)=>{
+
+app.get("/chats/:chatid",async(req,res)=>{
     const chatid=req.params.chatid;
     if(!mongoose.isValidObjectId(chatid)){
         return res.status(400).json({error:"Invalid chatid"});
@@ -60,7 +55,7 @@ app.get("/retrivechats/:chatid",async(req,res)=>{
     res.json(chat);
 })
 
-app.get("/retrivemessages/:chatid",async(req,res)=>{
+app.get("/messages/:chatid",async(req,res)=>{
     const chatid=req.params.chatid;
     if(!mongoose.isValidObjectId(chatid)){
         return res.status(400).json({error:"Invalid chatid"});
@@ -72,23 +67,149 @@ app.get("/retrivemessages/:chatid",async(req,res)=>{
     res.json(messages);
 })
 
-io.on('connection',(socket)=>{
-    console.log("user is connected",socket.id);
-    socket.on("send-message",(message,to,from,chatid)=>{
-        const mess=({
-            message:message,
-            chatid:chatid,
-            from:from,
-            to:to
-        })
-        socket.to(to).emit("recieve-message",mess);
-    })
-
-    socket.on("join",(userid)=>{
-        socket.join(userid);
-    })
+app.get("/users/:userid",async(req,res)=>{
+    const {userid}=req.params;
+    if(!mongoose.isValidObjectId(userid)){
+        return res.status(400).json({error:"Invalid userid"});
+    }
+    const user=await User.findById(userid).select("-password -chats");
+    if(!user){
+        return res.status(404).json({error:"user not found"});
+    }
+    res.json(user);
 })
 
-httpserver.listen(8000,()=>{
+app.get("/friends/:userid",async(req,res)=>{
+    const {userid}=req.params;
+    if(!mongoose.isValidObjectId(userid)){
+        return res.status(400).json({error:"Invalid userid"});
+    }
+    const user=await User.findById(userid);
+    if(!user){
+        return res.status(404).json({error:"user not found"});
+    }
+    const friends=user.friends;
+    const friendslist=await User.find({_id:{$in:friends}}).select("-password -chats");
+    res.json(friendslist);
+})
+
+app.post("/sendmessage/:chatid",async(req,res)=>{
+    const {chatid}=req.params;
+    const {message, from, to} = req.body;
+    
+    if(!mongoose.isValidObjectId(chatid)){
+        return res.status(400).json({error:"Invalid chatid"});
+    }
+    
+    if(!message || !from || !to){
+        return res.status(400).json({error:"Message, from, and to are required"});
+    }
+
+    const newmessage=new Message({message, from, to, chatid});
+    await newmessage.save();
+    const receiverSocketId=getReceiverSocketId(to);
+    if(receiverSocketId){
+        io.to(receiverSocketId).emit("recieve-message",newmessage);
+    }
+    res.status(201).json({newmessage});
+})
+
+app.post("/sendrequest",async(req,res)=>{
+    const {senderid,receiverid}=req.body;
+    if(!mongoose.isValidObjectId(senderid) || !mongoose.isValidObjectId(receiverid)){
+        return res.status(400).json({error:"Invalid senderid or receiverid"});
+    }
+        const newrequest=new Request({sender:senderid,receiver:receiverid});
+    await newrequest.save();
+    res.status(201).json({newrequest});
+    const receiverSocketId=getReceiverSocketId(receiverid);
+    if(receiverSocketId){
+        io.to(receiverSocketId).emit("recieve-request",newrequest);
+    }
+})  
+
+app.get("/requests/:userid",async(req,res)=>{
+    const {userid}=req.params;
+    if(!mongoose.isValidObjectId(userid)){
+        return res.status(400).json({error:"Invalid userid"});
+    }
+    const requests=await Request.find({$or:[{sender:userid},{receiver:userid}]});
+    res.json(requests);
+})
+
+app.post("/acceptrequest",async(req,res)=>{
+    const {requestid}=req.body;
+    if(!mongoose.isValidObjectId(requestid)){
+        return res.status(400).json({error:"Invalid requestid"});
+    }
+    const request=await Request.findById(requestid);
+    if(!request){
+        return res.status(404).json({error:"request not found"});
+    }
+    const sender=await User.findById(request.sender);
+    const receiver=await User.findById(request.receiver);
+    
+    // Add friend IDs to both users
+    sender.friends.push(receiver._id);
+    receiver.friends.push(sender._id);
+    
+    // Create new chat with participant IDs
+    const newchat=new Chat({participants:[sender._id,receiver._id]});
+    await newchat.save();
+    
+    // Add chat IDs to both users
+    sender.chats.push(newchat._id);
+    receiver.chats.push(newchat._id);
+    
+    await sender.save();
+    await receiver.save();
+    await Request.findByIdAndDelete(requestid);
+    res.status(200).json({message:"request accepted"});
+    console.log(receiver);
+    const receiverSocketId=getReceiverSocketId(receiver._id);
+    console.log(receiverSocketId);
+    if(receiverSocketId){
+        io.to(receiverSocketId).emit("update-user",receiver);
+    }
+    const senderSocketId=getReceiverSocketId(sender._id);
+    if(senderSocketId){
+        io.to(senderSocketId).emit("update-user",sender);
+    }
+})
+
+app.post("/rejectrequest",async(req,res)=>{
+    const {requestid}=req.body;
+    if(!mongoose.isValidObjectId(requestid)){
+        return res.status(400).json({error:"Invalid requestid"});
+    }
+    const request=await Request.findById(requestid);
+    if(!request){
+        return res.status(404).json({error:"request not found"});
+    }
+    await Request.findByIdAndDelete(requestid);
+    res.status(200).json({message:"request rejected"});
+})  
+
+app.get("/searchusername/:username", async(req, res) => {
+    const { username } = req.params;
+    
+    
+    if (!username || username.trim() === '') {
+      return res.status(400).json({error: "Invalid search term"});
+    }
+    
+    try {
+      const users = await User.find({
+        username: { $regex: username.trim(), $options: "i" }
+      }).select("-password -chats");
+      
+      res.json(users);
+    } catch (error) {
+      console.error('Search error:', error);
+      res.status(500).json({error: "Search failed"});
+    }
+  });
+server.listen(8000,()=>{
+    connectDB();
     console.log("server running on 8000");
 })

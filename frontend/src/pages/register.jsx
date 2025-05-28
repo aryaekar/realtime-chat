@@ -1,23 +1,26 @@
-import { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../App';
+import { useState } from 'react';
+import { useNavigate,Link } from 'react-router-dom';
+import { useAuthContext } from '../context/authcontext.jsx';
 import axios from 'axios';
 
 function Register() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login } = useContext(AuthContext);
+  const { setUser } = useAuthContext();
   const navigate = useNavigate();
   const [error, setError] = useState('');
-  const API_URL = process.env.REACT_APP_SERVER_URL;
+  const API_URL = import.meta.env.VITE_API_URL;
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try{
       const response= await axios.post(`${API_URL}/register`,{username,email,password});
+      console.log(response.data);
       if(response.status===201){
-        login(response.data);
+        localStorage.setItem("chat-user",JSON.stringify(response.data.user));
+        setUser(response.data.user);
         navigate('/');
       }
       else{
@@ -36,6 +39,9 @@ function Register() {
           <p className="mt-6 mb-10 text-center text-2xl font-bold text-gray-900">
             Create an Account
           </p>
+        </div>
+        <div>
+          <p className='text-center'>Already have an account? <Link to="/login" className='text-blue-500'>Login</Link></p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">

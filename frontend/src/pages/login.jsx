@@ -1,15 +1,15 @@
-import { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../App';
+import { useState } from 'react';
+import { useNavigate,Link } from 'react-router-dom';
+import { useAuthContext } from '../context/authcontext.jsx';
 import axios from 'axios';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login } = useContext(AuthContext);
+  const { setUser } = useAuthContext();
   const navigate = useNavigate();
-  const API_URL = process.env.REACT_APP_SERVER_URL;
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,7 +20,8 @@ function Login() {
     try{
       const response= await axios.post(`${API_URL}/login`,{email,password});
       if(response.status===200){
-        login(response.data);
+        setUser(response.data.user);
+        localStorage.setItem("chat-user",JSON.stringify(response.data.user));
         navigate('/');
       }
       else{
@@ -39,6 +40,9 @@ function Login() {
           <p className="mt-6 mb-10 text-center text-2xl font-bold text-gray-900">
             Log in to Chat
           </p>
+        </div>
+        <div>
+          <p className='text-center'>Don't have an account? <Link to="/register" className='text-blue-500'>Register</Link></p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">

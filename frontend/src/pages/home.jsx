@@ -1,4 +1,4 @@
-import useGetChats from "../hooks/usegetchats.jsx";
+import useGetChats from "../hooks/useGetchats.jsx";
 import useGetMessages from "../hooks/useGetmessages.jsx";
 import useListenMessages from "../hooks/useListenmessages.jsx";
 import Sidebar from "../components/sidebar.jsx";

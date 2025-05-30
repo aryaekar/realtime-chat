@@ -9,7 +9,7 @@ import cors from "cors";
 import Request from "./requestmodel.js";
 configDotenv();
 app.use(express.json());
-app.use(cors({ origin: "http://localhost:5173", methods: ["GET", "POST"] }));
+app.use(cors({ origin: "https://realtime-chat-nqbh.vercel.app", methods: ["GET", "POST"] }));
 const port=process.env.PORT||8000;
 const connectDB=async()=>{
     const res=await mongoose.connect(process.env.MONGO_API);

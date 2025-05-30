@@ -10,7 +10,7 @@ import Request from "./requestmodel.js";
 configDotenv();
 app.use(express.json());
 app.use(cors({ origin: "http://localhost:5173", methods: ["GET", "POST"] }));
-
+const port=process.env.PORT||8000;
 const connectDB=async()=>{
     const res=await mongoose.connect(process.env.MONGO_API);
     if(res)
@@ -209,7 +209,7 @@ app.get("/searchusername/:username", async(req, res) => {
       res.status(500).json({error: "Search failed"});
     }
   });
-server.listen(8000,()=>{
+server.listen(port,()=>{
     connectDB();
     console.log("server running on 8000");
 })
